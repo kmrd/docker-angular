@@ -2,6 +2,8 @@
 #
 # Ubuntu-based, Angular container
 #
+# Ubuntu 16.04
+# Node 8.x
 #
 # Usage
 # ================================
@@ -33,7 +35,7 @@
 #
 #
 
-FROM ubuntu:latest
+FROM ubuntu:16.04
  
 MAINTAINER David Reyes "david@thoughtbubble.ca"
 
