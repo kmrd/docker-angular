@@ -1,7 +1,7 @@
 #!/bin/bash
 
-cd /home/node/app
-ng new .
+# cd /home/node/app
+# ng new .
 # npm install
 # npm start --open false --port 4201 --host 0.0.0.0
 # ng serve

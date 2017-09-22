@@ -5,33 +5,41 @@
 # Ubuntu 16.04
 # Node 8.x
 #
+# - Uses Bind mounts for working on code on your local host machine
+#
+#
 # Usage
 # ================================
-# Building / Retrieving Image:
+# Retrieving Image:
 # --------------------------------
-# docker build -t kmrd/ng .
 # docker pull kmrd/ng
 #
 #
 # Starting the Container:
 # --------------------------------
-# Nix:
-# docker run -u $(id -u) --rm --port 3000:3000 -v "$PWD":/app kmrd/ng ng serve --host 0.0.0.0
-# docker run --rm --port 3000:3000 -v "$(PWD)":/home/node/app kmrd/ng ng serve --host 0.0.0.0
+# (Run inside your development directory)
+# docker run -it --rm --name ngdev -p 4200:4200 --mount type=bind,source=$(PWD),target=/home/node/app kmrd/ng
 #
-# Windows:
-# docker run --rm --port 3000:3000 -v .:/home/node/app kmrd/ng ng serve --host 0.0.0.0
+#
+# Can use the following for persistant DB store, etc:
+# 	"docker volume create devngvol"	# creates a volume named devngvol
+#	--mount source=devngvol,target=/dir/in/container #use this as a 'docker run' parameter
+#
+#
+# Building Image:
+# --------------------------------
+# docker build -t kmrd/ng .
 #
 #
 # Dev Notes
 # ================================
 # - Consider using alpine rather than ubuntu since it's more lightweight
 # 
+#
 # Known Problems / To do
 # ================================
-# - Hook up volumes
-# - Hook up some database
-#	- make this use volumes too
+# - Hook up some database using volumes?
+# - Testing needed on OSX
 #
 #
 
@@ -64,26 +72,20 @@ RUN npm install -g typescript tslint
 RUN npm install -g @angular/cli
 
 
-WORKDIR /home/node/
-RUN ng new temp
-WORKDIR /home/node/temp
-RUN npm install
-RUN npm install --save-dev @angular/cli@latest
-
-
-# RUN mkdir /home/node/app
-# RUN git clone --depth=1 https://github.com/angular/quickstart.git /home/node/app
+# Useful to set a predefined project
+# WORKDIR /home/node/
+# RUN ng new www --directory /home/node/app
 # WORKDIR /home/node/app
+# RUN npm install
+# RUN npm install --save-dev @angular/cli@latest
 
-#RUN npm install
-#RUN npm install --save-dev @angular/cli@latest
-
-COPY entrypoint.sh /home/node/
-# Remove pesky Windows carriage-returns
-RUN sed -i -e 's/\r$//' /home/node/entrypoint.sh
-
-EXPOSE 3000
-
+# Use entrypoint rather than CMD for additional commands
+# COPY entrypoint.sh /home/node/
+# # Remove pesky Windows carriage-returns
+# RUN sed -i -e 's/\r$//' /home/node/entrypoint.sh
 # ENTRYPOINT ["/home/node/entrypoint.sh"]
 
-CMD ["ng", "serve", "--host=0.0.0.0", "--port=3000"]
+EXPOSE 4200
+
+# CMD ["ng", "serve", "--host=0.0.0.0", "--port=4200"]
+CMD ["/bin/bash"]
