@@ -1,59 +1,87 @@
-# Simple angular-cli docker container
 #
-# Usage:
-# docker build -t ng-cli .
 #
-# docker run -u $(id -u) --rm -p 4200:4200 -v "$PWD":/app trion/ng-cli ng serve -host 0.0.0.0
+# Ubuntu-based, Angular container
 #
-# Original author: trion development GmbH "info@trion.de"
+#
+# Usage
+# ================================
+# Building / Retrieving Image:
+# --------------------------------
+# docker build -t kmrd/ng .
+# docker pull kmrd/ng
+#
+#
+# Starting the Container:
+# --------------------------------
+# Nix:
+# docker run -u $(id -u) --rm --port 3000:3000 -v "$PWD":/app kmrd/ng ng serve --host 0.0.0.0
+# docker run --rm --port 3000:3000 -v "$(PWD)":/home/node/app kmrd/ng ng serve --host 0.0.0.0
+#
+# Windows:
+# docker run --rm --port 3000:3000 -v .:/home/node/app kmrd/ng ng serve --host 0.0.0.0
+#
+#
+# Dev Notes
+# ================================
+# - Consider using alpine rather than ubuntu since it's more lightweight
+# 
+# Known Problems / To do
+# ================================
+# - Hook up volumes
+# - Hook up some database
+#	- make this use volumes too
+#
+#
 
-#simple angular-cli docker installation
-#docker build -t ng-cli .
-#or specify angular-cli version
-#docker build --build-arg NG_CLI_VERSION=1.4.2
-
-FROM node:alpine
-
+FROM ubuntu:latest
+ 
 MAINTAINER David Reyes "david@thoughtbubble.ca"
 
-RUN apk update && \
-    apk upgrade && \
-    apk add sshpass rsync openssh
-
-RUN npm install -g @angular/cli tslint typescript
-
-RUN rm -rf /var/cache/apk/*
-
-RUN npm cache clean
-
-RUN mkdir -p /app
-
-WORKDIR /app
+RUN apt-get update && \
+	apt-get upgrade -y && \
+	apt-get install -y curl git nano vim && \
+	apt-get install -y build-essential libssl-dev
 
 
-# ARG NG_CLI_VERSION=1.4.2
-# ARG USER_HOME_DIR="/tmp"
-# ARG APP_DIR="/app"
-# ARG USER_ID=1000
-# 
-# ENV NPM_CONFIG_LOGLEVEL warn
-# #angular-cli rc0 crashes with .angular-cli.json in user home
-# ENV HOME "$USER_HOME_DIR"
-# 
-# RUN set -xe \
-#     && curl -sL https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 > /usr/bin/dumb-init \
-#     && chmod +x /usr/bin/dumb-init \
-#     && mkdir -p $USER_HOME_DIR \
-#     && chown $USER_ID $USER_HOME_DIR \
-#     && chmod a+rw $USER_HOME_DIR \
-#     && (cd "$USER_HOME_DIR"; npm install -g @angular/cli@$NG_CLI_VERSION; npm install -g yarn; npm cache clean)
-# 
-# #not declared to avoid anonymous volume leak
-# #VOLUME "$USER_HOME_DIR/.cache/yarn"
-# #VOLUME "$APP_DIR/"
-# WORKDIR $APP_DIR
-# EXPOSE 4200
-# 
-# ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-# 
-# USER $USER_ID
+# Add PPA to get our desired version version of Node
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs
+
+
+# Permissions fixing for npm / angular
+# workaround for issue https://github.com/angular/angular-cli/issues/7389
+RUN groupadd --gid 1001 node && \
+	useradd --uid 1001 --gid node --shell /bin/bash --create-home node
+USER node
+RUN mkdir /home/node/.npm-global
+ENV PATH /home/node/.npm-global/bin:$PATH
+ENV NPM_CONFIG_PREFIX /home/node/.npm-global
+
+
+RUN npm install -g typescript tslint
+RUN npm install -g @angular/cli
+
+
+WORKDIR /home/node/
+RUN ng new temp
+WORKDIR /home/node/temp
+RUN npm install
+RUN npm install --save-dev @angular/cli@latest
+
+
+# RUN mkdir /home/node/app
+# RUN git clone --depth=1 https://github.com/angular/quickstart.git /home/node/app
+# WORKDIR /home/node/app
+
+#RUN npm install
+#RUN npm install --save-dev @angular/cli@latest
+
+COPY entrypoint.sh /home/node/
+# Remove pesky Windows carriage-returns
+RUN sed -i -e 's/\r$//' /home/node/entrypoint.sh
+
+EXPOSE 3000
+
+# ENTRYPOINT ["/home/node/entrypoint.sh"]
+
+CMD ["ng", "serve", "--host=0.0.0.0", "--port=3000"]
