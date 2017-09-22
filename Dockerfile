@@ -12,33 +12,48 @@
 #or specify angular-cli version
 #docker build --build-arg NG_CLI_VERSION=1.4.2
 
-FROM node:6
+FROM node:alpine
 
-MAINTAINER trion development GmbH "info@trion.de"
+MAINTAINER David Reyes "david@thoughtbubble.ca"
 
-ARG NG_CLI_VERSION=1.4.2
-ARG USER_HOME_DIR="/tmp"
-ARG APP_DIR="/app"
-ARG USER_ID=1000
+RUN apk update && \
+    apk upgrade && \
+    apk add sshpass rsync openssh
 
-ENV NPM_CONFIG_LOGLEVEL warn
-#angular-cli rc0 crashes with .angular-cli.json in user home
-ENV HOME "$USER_HOME_DIR"
+RUN npm install -g @angular/cli tslint typescript
 
-RUN set -xe \
-    && curl -sL https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 > /usr/bin/dumb-init \
-    && chmod +x /usr/bin/dumb-init \
-    && mkdir -p $USER_HOME_DIR \
-    && chown $USER_ID $USER_HOME_DIR \
-    && chmod a+rw $USER_HOME_DIR \
-    && (cd "$USER_HOME_DIR"; npm install -g @angular/cli@$NG_CLI_VERSION; npm install -g yarn; npm cache clean)
+RUN rm -rf /var/cache/apk/*
 
-#not declared to avoid anonymous volume leak
-#VOLUME "$USER_HOME_DIR/.cache/yarn"
-#VOLUME "$APP_DIR/"
-WORKDIR $APP_DIR
-EXPOSE 4200
+RUN npm cache clean
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+RUN mkdir -p /app
 
-USER $USER_ID
+WORKDIR /app
+
+
+# ARG NG_CLI_VERSION=1.4.2
+# ARG USER_HOME_DIR="/tmp"
+# ARG APP_DIR="/app"
+# ARG USER_ID=1000
+# 
+# ENV NPM_CONFIG_LOGLEVEL warn
+# #angular-cli rc0 crashes with .angular-cli.json in user home
+# ENV HOME "$USER_HOME_DIR"
+# 
+# RUN set -xe \
+#     && curl -sL https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 > /usr/bin/dumb-init \
+#     && chmod +x /usr/bin/dumb-init \
+#     && mkdir -p $USER_HOME_DIR \
+#     && chown $USER_ID $USER_HOME_DIR \
+#     && chmod a+rw $USER_HOME_DIR \
+#     && (cd "$USER_HOME_DIR"; npm install -g @angular/cli@$NG_CLI_VERSION; npm install -g yarn; npm cache clean)
+# 
+# #not declared to avoid anonymous volume leak
+# #VOLUME "$USER_HOME_DIR/.cache/yarn"
+# #VOLUME "$APP_DIR/"
+# WORKDIR $APP_DIR
+# EXPOSE 4200
+# 
+# ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+# 
+# USER $USER_ID
