@@ -20,13 +20,16 @@
 # (Run inside your development directory)
 # docker run -it --rm --name ngdev -p 4200:4200 --mount type=bind,source=$(PWD),target=/home/node/app kmrd/ng
 #
+# Angular Dev Server:
+# ng serve --host 0.0.0.0 --poll
+#
 #
 # Can use the following for persistant DB store, etc:
 # 	"docker volume create devngvol"	# creates a volume named devngvol
 #	--mount source=devngvol,target=/dir/in/container #use this as a 'docker run' parameter
 #
 #
-# Building Image:
+# (Re)-Building Image:
 # --------------------------------
 # docker build -t kmrd/ng .
 #
@@ -57,7 +60,6 @@ RUN apt-get update && \
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs
 
-
 # Permissions fixing for npm / angular
 # workaround for issue https://github.com/angular/angular-cli/issues/7389
 RUN groupadd --gid 1001 node && \
@@ -67,25 +69,20 @@ RUN mkdir /home/node/.npm-global
 ENV PATH /home/node/.npm-global/bin:$PATH
 ENV NPM_CONFIG_PREFIX /home/node/.npm-global
 
+RUN npm install -g typescript tslint @angular/cli
 
-RUN npm install -g typescript tslint
-RUN npm install -g @angular/cli
+EXPOSE 4200
 
+WORKDIR /home/node/app/
 
-# Useful to set a predefined project
-# WORKDIR /home/node/
-# RUN ng new www --directory /home/node/app
-# WORKDIR /home/node/app
-# RUN npm install
-# RUN npm install --save-dev @angular/cli@latest
+CMD ["/bin/bash"]
 
-# Use entrypoint rather than CMD for additional commands
+# If you want to do a serve straight away:
+# Effectively: ng serve --host 0.0.0.0 --port 4200 --poll
+# CMD ["ng", "serve", "--host=0.0.0.0", "--port=4200", "--poll"]
+
+# If you want to use an Entrypoint instead:
 # COPY entrypoint.sh /home/node/
 # # Remove pesky Windows carriage-returns
 # RUN sed -i -e 's/\r$//' /home/node/entrypoint.sh
 # ENTRYPOINT ["/home/node/entrypoint.sh"]
-
-EXPOSE 4200
-
-# CMD ["ng", "serve", "--host=0.0.0.0", "--port=4200"]
-CMD ["/bin/bash"]
